@@ -14,6 +14,13 @@ def save_rewards_to_csv(agent_name, env_name, rewards):
     df = pd.DataFrame({"reward": rewards})
     df.to_csv(filepath, index=False)
     print(f"Saved rewards for {agent_name} on {env_name} to {filepath}")
+
+def save_combined_rewards_to_csv(env_name, reward_data):
+    """Save combined rewards for all agents in a specific environment."""
+    filepath = f'output/combined_rewards_{env_name}.csv'
+    df = pd.DataFrame(reward_data)
+    df.to_csv(filepath, index=False)
+    print(f"Saved combined rewards for {env_name} to {filepath}")
             
 def collate_results(all_rewards):
     results = {}
