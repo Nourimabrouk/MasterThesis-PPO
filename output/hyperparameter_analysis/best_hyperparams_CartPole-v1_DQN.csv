@@ -1,0 +1,2 @@
+learning_rate,gamma,target_update_interval,exploration_fraction,best_reward
+0.00017413261763797594,0.9219347280391442,1911,0.4292913145943175,304.0

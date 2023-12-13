@@ -6,87 +6,104 @@ import random
 import torch
 import optuna
 import pandas as pd
-from src.utils import save_model, load_model, save_rewards_to_csv
-from src.config import AGENTS, ENVIRONMENTS, TOTAL_TIMESTEPS
-from src.agents import evaluate_agent, train_agent
+from utils import save_model, load_model, save_rewards_to_csv
+from config import AGENTS, ENVIRONMENTS, TOTAL_TIMESTEPS, NUM_RUNS
+from agents import evaluate_agent, train_agent
 
-tensorboard_base_dir = "./tensorboard_logs/"
+# Set up the directory for TensorBoard logs
+tensorboard_base_dir = "./output/tensorboard_logs/"
 
+# Seed setup for reproducibility
 SEED = 1337
 np.random.seed(SEED)
 random.seed(SEED)
 torch.manual_seed(SEED)
 
+# Main function to run the comparative analysis
 def run_comparative_analysis():
     print("Running comparative analysis...")
     train_all_agents()
     evaluate_all_agents()
     print("Analysis complete.")
-    
-def get_best_hyperparameters(ENV_NAME, agent_name):
-    """Load Optuna results and return the best hyperparameters for a given agent-environment pair."""
-    
-    print(f"Loading hyperparameters for {ENV_NAME} on {agent_name}...")
-    df = pd.read_csv(f'output/optuna_results_{ENV_NAME}_{agent_name}.csv')
-    
-    best_trial = df.sort_values(by='value').iloc[0]
 
-    hyperparams = {}
-    for col in df.columns:
-        if col.startswith('params_'):
-            param_name = col.replace('params_', '')
-            # Remove agent name prefix and leading underscores
-            clean_param_name = param_name.replace(f"{agent_name}_", "").lstrip('_')
-            hyperparams[clean_param_name] = best_trial[col]
+# Function to load best hyperparameters from a CSV file
+def get_best_hyperparameters(env_name, agent_name):
+    print(f"Loading best hyperparameters for {agent_name} on {env_name}...")
+    file_path = f'output/hyperparameter_analysis/best_hyperparams_{env_name}_{agent_name}.csv'
+    
+    if not os.path.isfile(file_path):
+        raise FileNotFoundError(f"No hyperparameter file found for {env_name} on {agent_name}")
 
-    return hyperparams
+    df_best = pd.read_csv(file_path)
+    best_hyperparams = df_best.iloc[0].to_dict()
+    best_hyperparams.pop('best_reward', None)
 
+    # Filter and adjust hyperparameters based on the agent
+    valid_hyperparams = {}
+    for key, value in best_hyperparams.items():
+        if key not in ['Unnamed: 0', 'best_reward']:
+            new_key = key.split('_', 1)[1] if agent_name in key else key
+            valid_hyperparams[new_key] = int(value) if new_key == 'n_steps' else value
+
+    return valid_hyperparams
+
+# Function to train all agents with the best hyperparameters
 def train_all_agents():
-    """Train all agents with best hyperparameters."""
     for agent_name in AGENTS:              
         for env_name in ENVIRONMENTS:   
-            try:
-                print(f"Training {agent_name} on {env_name}...")
-                hyperparams = get_best_hyperparameters(env_name, agent_name)
-                env = gym.make(env_name)
-                if hasattr(env, 'seed'):
-                    env.seed(SEED)
-                tensorboard_log_dir = os.path.join(tensorboard_base_dir, f"{agent_name}_{env_name}")
-                trained_agent = train_agent(agent_name, env, hyperparameters=hyperparams, tensorboard_log=tensorboard_log_dir)
+            for run in range(NUM_RUNS):
+                try:
+                    print(f"Training {agent_name} on {env_name}, Run {run + 1}/{NUM_RUNS}...")
+                    hyperparams = get_best_hyperparameters(env_name, agent_name)
+                    env = gym.make(env_name)
+                    if hasattr(env, 'seed'):
+                        env.seed(SEED + run)
+                    tensorboard_log_dir = os.path.join(tensorboard_base_dir, f"{agent_name}_{env_name}_run{run + 1}")
 
-                save_path = os.path.join('models', f'{agent_name}_{env_name}.model')
-                save_model(trained_agent, save_path)
-                
-                env.close()
-            except Exception as e:
-                print(f"Error training {agent_name} on {env_name}. Details: {e}")
+                    trained_agent = train_agent(agent_name, env, hyperparameters=hyperparams, tensorboard_log=tensorboard_log_dir, callback=None, total_timesteps=TOTAL_TIMESTEPS)
 
+                    save_path = os.path.join('/output/comparative_analysis/models', f'{agent_name}_{env_name}_run{run + 1}.model')
+                    save_model(trained_agent, save_path)
+
+                    env.close()
+                except Exception as e:
+                    print(f"Error in run {run + 1} training {agent_name} on {env_name}. Details: {e}")
+
+# Function to evaluate all trained agents
 def evaluate_all_agents():
-    """Evaluate all trained agents."""
+    results = []
     for agent_name in AGENTS:
         for env_name in ENVIRONMENTS:
-            try:
-                print(f"Evaluating {agent_name} on {env_name}...")
+            for run in range(NUM_RUNS):
+                try:
+                    print(f"Evaluating {agent_name} on {env_name}, Run {run + 1}/{NUM_RUNS}...")
 
-                env = gym.make(env_name)
-                if hasattr(env, 'seed'):
-                    env.seed(SEED)
+                    env = gym.make(env_name)
+                    if hasattr(env, 'seed'):
+                        env.seed(SEED + run)
 
-                model_path = os.path.join('models', f'{agent_name}_{env_name}.model')
-                trained_agent = load_model(model_path)
+                    model_path = os.path.join('/output/comparative_analysis/models', f'{agent_name}_{env_name}_run{run + 1}.model')
+                    trained_agent = load_model(agent_name=agent_name, load_path=model_path) 
 
-                total_reward = evaluate_agent(trained_agent, env)
-                print(f"Evaluation reward for {agent_name} on {env_name}: {total_reward}")
-                save_rewards_to_csv(agent_name, env_name, total_reward)
-                
-                env.close()
-            except Exception as e:
-                print(f"Error evaluating {agent_name} on {env_name}. Details: {e}")
+                    total_reward = evaluate_agent(trained_agent, env)
+                    print(f"Evaluation reward for {agent_name} on {env_name}, Run {run + 1}: {total_reward}")
+                    
+                    results.append({
+                        "agent": agent_name,
+                        "environment": env_name,
+                        "run": run + 1,
+                        "reward": total_reward
+                    })
+
+                    env.close()
+                except Exception as e:
+                    print(f"Error in run {run + 1} evaluating {agent_name} on {env_name}. Details: {e}")
+
+    df_results = pd.DataFrame(results)
+    df_results.to_csv('/output/comparative_analysis/evaluation_results.csv', index=False)
 
 def main():
     run_comparative_analysis()
-    # TODO: Add a function to visualize and analyze results.
-    # View tensorboard logs: tensorboard --logdir ./tensorboard_logs/
 
 if __name__ == "__main__":
     main()

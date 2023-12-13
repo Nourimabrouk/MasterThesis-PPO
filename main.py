@@ -1,3 +1,7 @@
+#### Main file for my master thesis project on the PPO algorithm in Reinforcement Learning
+#### By Nouri Mabrouk
+#### 2023
+
 from src.baseline_analysis import run_baseline_analysis
 from src.hyperparameter_tuning import run_hyperparameter_tuning
 from src.comparative_analysis import run_comparative_analysis
