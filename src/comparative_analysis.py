@@ -7,11 +7,11 @@ import torch
 import optuna
 import pandas as pd
 from utils import save_model, load_model, save_rewards_to_csv
-from config import AGENTS, ENVIRONMENTS, TOTAL_TIMESTEPS, NUM_RUNS
+from config import AGENTS, ENVIRONMENTS, TOTAL_TIMESTEPS, NUM_RUNS, EVALUATION_EPISODES
 from agents import evaluate_agent, train_agent
 
 # Set up the directory for TensorBoard logs
-tensorboard_base_dir = "./output/tensorboard_logs/"
+tensorboard_base_dir = "output/tensorboard_logs/"
 
 # Seed setup for reproducibility
 SEED = 1337
@@ -51,38 +51,38 @@ def get_best_hyperparameters(env_name, agent_name):
 def train_all_agents():
     for agent_name in AGENTS:              
         for env_name in ENVIRONMENTS:   
-#            for run in range(NUM_RUNS):
-            try:
-                print(f"Training {agent_name} on {env_name}")#, Run {run + 1}/{NUM_RUNS}...")
-                hyperparams = get_best_hyperparameters(env_name, agent_name)
-                env = gym.make(env_name)
-                if hasattr(env, 'seed'):
-                    env.seed(SEED)
-                tensorboard_log_dir = os.path.join(tensorboard_base_dir, f"{agent_name}_{env_name}_run{run + 1}")
+            for run in range(NUM_RUNS):
+                try:
+                    print(f"Training {agent_name} on {env_name}, Run {run + 1}/{NUM_RUNS}...")
+                    hyperparams = get_best_hyperparameters(env_name, agent_name)
+                    env = gym.make(env_name)
+                    if hasattr(env, 'seed'):
+                        env.seed(SEED)
+                    tensorboard_log_dir = os.path.join(tensorboard_base_dir, f"{agent_name}_{env_name}_run{run + 1}")
 
-                trained_agent = train_agent(agent_name, env, hyperparameters=hyperparams, tensorboard_log=tensorboard_log_dir, callback=None, total_timesteps=TOTAL_TIMESTEPS)
+                    trained_agent = train_agent(agent_name, env, hyperparameters=hyperparams, tensorboard_log=tensorboard_log_dir, callback=None, total_timesteps=TOTAL_TIMESTEPS)
 
-                save_path = os.path.join('/output/comparative_analysis/models', f'{agent_name}_{env_name}_run{run + 1}.model')
-                save_model(trained_agent, save_path)
+                    save_path = os.path.join('output/comparative_analysis/models', f'{agent_name}_{env_name}_run{run + 1}.model')
+                    save_model(trained_agent, save_path)
 
-                env.close()
-            except Exception as e:
-                print(f"Error in run {run + 1} training {agent_name} on {env_name}. Details: {e}")
+                    env.close()
+                except Exception as e:
+                    print(f"Error in run {run + 1} training {agent_name} on {env_name}. Details: {e}")
 
 # Function to evaluate all trained agents
 def evaluate_all_agents():
     results = []
     for agent_name in AGENTS:
         for env_name in ENVIRONMENTS:
-            for run in range(NUM_RUNS):
+            for run in range(EVALUATION_EPISODES):
                 try:
-                    print(f"Evaluating {agent_name} on {env_name}, Run {run + 1}/{NUM_RUNS}...")
+                    print(f"Evaluating {agent_name} on {env_name}, Run {run + 1}/{EVALUATION_EPISODES}...")
 
                     env = gym.make(env_name)
                     if hasattr(env, 'seed'):
                         env.seed(SEED + run)
 
-                    model_path = os.path.join('/output/comparative_analysis/models', f'{agent_name}_{env_name}_run{run + 1}.model')
+                    model_path = os.path.join('output/comparative_analysis/models', f'{agent_name}_{env_name}_run{run + 1}.model')
                     trained_agent = load_model(agent_name=agent_name, load_path=model_path) 
 
                     total_reward = evaluate_agent(trained_agent, env)
