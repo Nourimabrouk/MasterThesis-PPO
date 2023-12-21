@@ -4,8 +4,15 @@ import stable_baselines3 as sb3
 from stable_baselines3.common.save_util import save_to_zip_file
 from config import AGENTS
 import csv
-
+import os
 # Function to save rewards for a specific agent and environment
+
+def save_results_to_csv(results, file_name):
+    output_directory = 'output/comparative_analysis'
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+    results.to_csv(os.path.join(output_directory, file_name), index=False)
+    
 def save_rewards_to_csv(agent_name, env_name, rewards, folder_name):
     filepath = f'output/{folder_name}/rewards_{agent_name}_{env_name}.csv'
     df = pd.DataFrame({"reward": rewards})

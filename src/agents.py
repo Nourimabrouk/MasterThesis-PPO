@@ -1,7 +1,7 @@
 #### Functions for creating models and training and evaluating agents
 
 import stable_baselines3 as sb3
-from config import SAVE_PATH, LOG_PATH, TOTAL_TIMESTEPS
+from config import SAVE_PATH, LOG_PATH, TOTAL_TIMESTEPS, EVALUATION_EPISODES
 import json
 import os
 import numpy as np
@@ -37,7 +37,7 @@ def create_model(agent_name, env, log_path, hyperparameters=None, tensorboard_lo
     
     return model
 
-def evaluate_agent(model, env, num_episodes=10):
+def evaluate_agent(model, env, num_episodes=EVALUATION_EPISODES):
     """Evaluate the agent's performance over a fixed number of episodes."""
     print(f"Evaluating agent over {num_episodes} episodes...")
     

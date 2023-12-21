@@ -1,3 +1,4 @@
+import warnings
 import pandas as pd
 import scipy.stats as stats
 import statsmodels.api as sm
@@ -5,6 +6,7 @@ from statsmodels.formula.api import ols
 import numpy as np
 import os
 import ast
+from utils import save_results_to_csv
 
 # Process reward strings into numerical mean and standard deviation
 def process_rewards(reward_str):
@@ -31,8 +33,16 @@ def perform_t_tests(df, agents, env, stat):
             agent1, agent2 = agents[i], agents[j]
             rewards_agent1 = df[(df['agent'] == agent1) & (df['environment'] == env)][stat]
             rewards_agent2 = df[(df['agent'] == agent2) & (df['environment'] == env)][stat]
-            t_stat, p_val = stats.ttest_ind(rewards_agent1, rewards_agent2)
-            t_test_results[(agent1, agent2)] = p_val
+
+            try:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=RuntimeWarning)
+                    t_stat, p_val = stats.ttest_ind(rewards_agent1, rewards_agent2)
+                t_test_results[(agent1, agent2)] = p_val
+            except Exception as e:
+                print(f"Error in t-test between {agent1} and {agent2}: {e}")
+                t_test_results[(agent1, agent2)] = None
+
     return t_test_results
 
 # Perform ANOVA for a given environment and statistic
@@ -41,13 +51,6 @@ def perform_anova(df, env, stat):
     df_env = df[df['environment'] == env]
     model = ols(formula, data=df_env).fit()
     return sm.stats.anova_lm(model, typ=2)
-
-# Save statistical results to a CSV file
-def save_results_to_csv(results, file_name):
-    output_directory = 'output/comparative_analysis'
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
-    results.to_csv(os.path.join(output_directory, file_name), index=False)
 
 # Main function to run comparative statistics on evaluation results
 def run_comparative_statistics(file_path):
@@ -100,5 +103,5 @@ def run_comparative_statistics(file_path):
     save_results_to_csv(pd.concat(anova_results_data, ignore_index=True), 'anova_results.csv')
 
 if __name__ == "__main__":
-    results_file_path = '/output/comparative_analysis/evaluation_results.csv'
+    results_file_path = 'output/comparative_analysis/evaluation_results.csv'
     run_comparative_statistics(results_file_path)

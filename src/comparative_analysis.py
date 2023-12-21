@@ -51,23 +51,23 @@ def get_best_hyperparameters(env_name, agent_name):
 def train_all_agents():
     for agent_name in AGENTS:              
         for env_name in ENVIRONMENTS:   
-            for run in range(NUM_RUNS):
-                try:
-                    print(f"Training {agent_name} on {env_name}, Run {run + 1}/{NUM_RUNS}...")
-                    hyperparams = get_best_hyperparameters(env_name, agent_name)
-                    env = gym.make(env_name)
-                    if hasattr(env, 'seed'):
-                        env.seed(SEED + run)
-                    tensorboard_log_dir = os.path.join(tensorboard_base_dir, f"{agent_name}_{env_name}_run{run + 1}")
+#            for run in range(NUM_RUNS):
+            try:
+                print(f"Training {agent_name} on {env_name}")#, Run {run + 1}/{NUM_RUNS}...")
+                hyperparams = get_best_hyperparameters(env_name, agent_name)
+                env = gym.make(env_name)
+                if hasattr(env, 'seed'):
+                    env.seed(SEED)
+                tensorboard_log_dir = os.path.join(tensorboard_base_dir, f"{agent_name}_{env_name}_run{run + 1}")
 
-                    trained_agent = train_agent(agent_name, env, hyperparameters=hyperparams, tensorboard_log=tensorboard_log_dir, callback=None, total_timesteps=TOTAL_TIMESTEPS)
+                trained_agent = train_agent(agent_name, env, hyperparameters=hyperparams, tensorboard_log=tensorboard_log_dir, callback=None, total_timesteps=TOTAL_TIMESTEPS)
 
-                    save_path = os.path.join('/output/comparative_analysis/models', f'{agent_name}_{env_name}_run{run + 1}.model')
-                    save_model(trained_agent, save_path)
+                save_path = os.path.join('/output/comparative_analysis/models', f'{agent_name}_{env_name}_run{run + 1}.model')
+                save_model(trained_agent, save_path)
 
-                    env.close()
-                except Exception as e:
-                    print(f"Error in run {run + 1} training {agent_name} on {env_name}. Details: {e}")
+                env.close()
+            except Exception as e:
+                print(f"Error in run {run + 1} training {agent_name} on {env_name}. Details: {e}")
 
 # Function to evaluate all trained agents
 def evaluate_all_agents():
@@ -100,10 +100,15 @@ def evaluate_all_agents():
                     print(f"Error in run {run + 1} evaluating {agent_name} on {env_name}. Details: {e}")
 
     df_results = pd.DataFrame(results)
-    df_results.to_csv('/output/comparative_analysis/evaluation_results.csv', index=False)
+
+    print("Saving results to CSV...")
+    df_results.to_csv('output/comparative_analysis/evaluation_results.csv', index=False)
 
 def main():
+    # Run the full analysis including training
     run_comparative_analysis()
-
+    
+    # Or run only the evaluation
+    # evaluate_all_agents()
 if __name__ == "__main__":
     main()
