@@ -8,20 +8,20 @@ import os
 # Function to save rewards for a specific agent and environment
 
 def save_results_to_csv(results, file_name):
-    output_directory = 'output/comparative_analysis'
+    output_directory = '~/output/comparative_analysis'
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
     results.to_csv(os.path.join(output_directory, file_name), index=False)
     
 def save_rewards_to_csv(agent_name, env_name, rewards, folder_name):
-    filepath = f'output/{folder_name}/rewards_{agent_name}_{env_name}.csv'
+    filepath = f'~/output/{folder_name}/rewards_{agent_name}_{env_name}.csv'
     df = pd.DataFrame({"reward": rewards})
     df.to_csv(filepath, index=False)
     print(f"Saved rewards for {agent_name} on {env_name} to {filepath}")
 
 # Function to save combined rewards from different agents in a given environment
 def save_combined_rewards_to_csv(env_name, reward_data, folder_name):
-    filepath = f'output/{folder_name}/combined_rewards_{env_name}.csv'
+    filepath = f'~/output/{folder_name}/combined_rewards_{env_name}.csv'
     df = pd.DataFrame(reward_data)
     df.to_csv(filepath, index=False)
     print(f"Saved combined rewards for {env_name} to {filepath}")

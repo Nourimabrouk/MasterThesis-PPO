@@ -80,7 +80,7 @@ def run_optimization_for_agent(agent_name, env_name):
     study_name = f"{env_name}_{agent_name}"
     study = optuna.create_study(study_name=study_name, direction="minimize")
 
-    tensorboard_dir = f"./tensorboard_logs/{study_name}"
+    tensorboard_dir = f"~/tensorboard_logs/{study_name}"
     tensorboard_callback = TensorBoardCallback(dirname=tensorboard_dir, metric_name="reward")
 
     try:
@@ -88,14 +88,14 @@ def run_optimization_for_agent(agent_name, env_name):
 
         # Save study results to CSV files
         df = study.trials_dataframe()
-        df.to_csv(f'output/hyperparameter_analysis/optuna_results_{env_name}_{agent_name}.csv', index=False)
+        df.to_csv(f'~/output/hyperparameter_analysis/optuna_results_{env_name}_{agent_name}.csv', index=False)
 
         best_trial = study.best_trial
         best_params = best_trial.params
         best_params['best_reward'] = -best_trial.value
 
         df_best = pd.DataFrame([best_params])
-        df_best.to_csv(f'output/hyperparameter_analysis/best_hyperparams_{env_name}_{agent_name}.csv', index=False)
+        df_best.to_csv(f'~/output/hyperparameter_analysis/best_hyperparams_{env_name}_{agent_name}.csv', index=False)
 
         print(f"Finished optimizing {agent_name} on {env_name}. Best reward: {-study.best_value}")
 

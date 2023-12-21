@@ -29,7 +29,7 @@ def run_comparative_analysis():
 # Function to load best hyperparameters from a CSV file
 def get_best_hyperparameters(env_name, agent_name):
     print(f"Loading best hyperparameters for {agent_name} on {env_name}...")
-    file_path = f'output/hyperparameter_analysis/best_hyperparams_{env_name}_{agent_name}.csv'
+    file_path = f'~/output/hyperparameter_analysis/best_hyperparams_{env_name}_{agent_name}.csv'
     
     if not os.path.isfile(file_path):
         raise FileNotFoundError(f"No hyperparameter file found for {env_name} on {agent_name}")
@@ -62,7 +62,7 @@ def train_all_agents():
 
                     trained_agent = train_agent(agent_name, env, hyperparameters=hyperparams, tensorboard_log=tensorboard_log_dir, callback=None, total_timesteps=TOTAL_TIMESTEPS)
 
-                    save_path = os.path.join('output/comparative_analysis/models', f'{agent_name}_{env_name}_run{run + 1}.model')
+                    save_path = os.path.join('~/output/comparative_analysis/models', f'{agent_name}_{env_name}_run{run + 1}.model')
                     save_model(trained_agent, save_path)
 
                     env.close()
@@ -82,7 +82,7 @@ def evaluate_all_agents():
                     if hasattr(env, 'seed'):
                         env.seed(SEED + run)
 
-                    model_path = os.path.join('output/comparative_analysis/models', f'{agent_name}_{env_name}_run{run + 1}.model')
+                    model_path = os.path.join('~/output/comparative_analysis/models', f'{agent_name}_{env_name}_run{run + 1}.model')
                     trained_agent = load_model(agent_name=agent_name, load_path=model_path) 
 
                     total_reward = evaluate_agent(trained_agent, env)
@@ -102,7 +102,7 @@ def evaluate_all_agents():
     df_results = pd.DataFrame(results)
 
     print("Saving results to CSV...")
-    df_results.to_csv('output/comparative_analysis/evaluation_results.csv', index=False)
+    df_results.to_csv('~/output/comparative_analysis/evaluation_results.csv', index=False)
 
 def main():
     # Run the full analysis including training
